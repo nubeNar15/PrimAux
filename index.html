@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Simulacros · Primeros auxilios en cocina</title>
+<style>
+:root{--bg:#14232b;--pn:#1d333d;--tx:#f4f7f8;--mu:#a9bcc4;--y:#f2c230;--r:#e8452c;--g:#3fbf7f;--b:#4aa8ea;color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#eef3f5;--pn:#fff;--tx:#14232b;--mu:#4d636c;--y:#b7860a;--r:#c6341c;--g:#1f8f58;--b:#1f78bd;color-scheme:light}}
+:root[data-theme="dark"]{--bg:#14232b}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:17px/1.45 "Segoe UI",system-ui,sans-serif;padding:14px;max-width:860px;margin-inline:auto}
+h1{font-size:1.3rem;margin:0}
+h2{font-size:1.15rem;margin:.2em 0 .5em;color:var(--y)}
+.hud{display:flex;gap:14px;flex-wrap:wrap;align-items:center;background:var(--pn);padding:10px 14px;border-radius:6px;margin:10px 0}
+.hud b{font-size:1.2em;color:var(--y)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 10px;min-height:1.8em}
+.chip{background:var(--y);color:#14232b;border-radius:99px;padding:2px 12px;font-size:.85em;font-weight:700}
+.tabs{display:flex;gap:6px;margin-bottom:10px}
+.tabs button{flex:1;background:var(--pn);color:var(--tx);border:2px solid var(--mu)}
+.tabs button[aria-selected="true"]{background:var(--y);color:#14232b;border-color:var(--y)}
+button{font:700 1em system-ui;border:0;border-radius:6px;padding:12px 16px;cursor:pointer;background:var(--y);color:#14232b}
+button.s{background:var(--pn);color:var(--tx);border:2px solid var(--mu)}
+button:focus-visible{outline:3px solid var(--tx);outline-offset:2px}
+button:disabled{opacity:.5;cursor:default}
+.box{background:var(--pn);border-radius:6px;padding:14px;margin-bottom:12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px}
+.opt{text-align:left;background:var(--pn);color:var(--tx);border:2px solid var(--mu)}
+.opt.done{border-color:var(--g)}
+.rctf div{margin:4px 0}
+.rctf span{display:inline-block;min-width:78px;font-weight:800;color:var(--y)}
+.slots{display:flex;flex-direction:column;gap:6px;margin:10px 0}
+.slot{border:2px dashed var(--mu);border-radius:6px;padding:8px 12px;color:var(--mu)}
+.slot.f{border:2px solid var(--g);color:var(--tx);background:var(--pn)}
+.bar{height:10px;background:var(--pn);border-radius:6px;overflow:hidden}
+.bar div{height:100%;background:var(--b);width:100%;transition:width 1s linear}
+.fb{margin:10px 0;padding:10px 12px;border-radius:6px;border-left:6px solid var(--r);background:var(--pn)}
+.fb.ok{border-color:var(--g)}
+.hid{display:none}
+.mu{color:var(--mu)}
+.sel{border-color:var(--r)!important;background:rgba(232,69,44,.18)}
+.good{border-color:var(--g)!important}
+</style>
+</head>
+<body>
+<h1>Simulacros de emergencia en cocina</h1>
+<div class="hud">Puntos <b id="sc">0</b> Nivel <b id="lv">1</b> Racha <b id="st">0</b></div>
+<div class="chips" id="badges"></div>
+<div class="tabs" role="tablist">
+<button role="tab" aria-selected="true" data-t="m">Misiones RCTF</button>
+<button role="tab" aria-selected="false" data-t="v">Mitos relámpago</button>
+<button role="tab" aria-selected="false" data-t="d">Detective</button>
+</div>
+
+<div id="pm">
+<div id="menu"><p class="mu">RCTF: cada misión te da un Rol, un Contexto, una Tarea y un Formato de respuesta. Ordena las acciones del protocolo antes de que se acabe el tiempo. Tienes 3 vidas.</p><div class="grid" id="mgrid"></div></div>
+<div id="play" class="hid">
+<div class="bar"><div id="tb"></div></div>
+<div class="hud"><span>Vidas <b id="lives"></b></span><span>Tiempo <b id="tl"></b></span></div>
+<div class="box rctf" id="rctf"></div>
+<div class="slots" id="slots"></div>
+<div class="grid" id="acts"></div>
+<div class="fb hid" id="fb"></div>
+<div id="end" class="box hid"></div>
+<button class="s" id="back">Volver a las misiones</button>
+</div>
+</div>
+
+<div id="pv" class="hid"></div>
+<div id="pd" class="hid"></div>
+
+<script>
+(function(){
+var $=function(x){return document.getElementById(x)};
+var score=0,streak=0,badges={},done={};
+function sh(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=a[i];a[i]=a[j];a[j]=t}return a}
+function el(tag,txt,cls){var e=document.createElement(tag);if(txt)e.textContent=txt;if(cls)e.className=cls;return e}
+function hud(){$('sc').textContent=score;$('lv').textContent=Math.floor(score/600)+1;$('st').textContent=streak}
+function badge(n){if(badges[n])return;badges[n]=1;$('badges').appendChild(el('span','★ '+n,'chip'))}
+
+var M=[
+{t:'Vapor en el antebrazo',r:'Cocinero de turno en la cocina de INCOS Beni.',c:'Un compañero destapó una olla y el vapor le quemó el antebrazo: piel roja con ampollas y mucho dolor.',k:'Atiende la quemadura.',
+ ok:['Alejarlo de la fuente de vapor','Retirar anillos y reloj','Enfriar con agua corriente 15 minutos','Cubrir con gasa limpia y floja'],
+ no:[['Ponerle hielo','El hielo daña el tejido. Se usa agua corriente, no helada.'],['Untar pasta dental','Los remedios caseros retienen calor y favorecen la infección.']]},
+{t:'Corte profundo con cuchillo',r:'Estudiante de Gastronomía que presencia el accidente.',c:'Un compañero se corta la palma y sangra con abundancia.',k:'Controla el sangrado.',
+ ok:['Presión directa con gasa limpia','Pedir que llamen a emergencias','Agregar más gasa encima si se empapa','Elevar la extremidad'],
+ no:[['Aplicar un torniquete de inmediato','El torniquete es el último recurso, no la primera medida.'],['Echar café molido en la herida','No es estéril y causa infección.']]},
+{t:'Comensal atragantado',r:'Mesero o cocinero que ve a un comensal en apuros.',c:'Un comensal se lleva las manos al cuello, no puede toser ni hablar y se pone morado.',k:'Aplica la secuencia de desobstrucción.',
+ ok:['Preguntar: ¿te estás atragantando?','Colocarse detrás con el puño sobre el ombligo','Compresiones hacia dentro y hacia arriba','Si pierde el conocimiento: al suelo, llamar y RCP'],
+ no:[['Darle agua para que pase','Beber puede empeorar la obstrucción.'],['Golpearle la cara','No ayuda y puede causar daño.']]},
+{t:'Sartén en llamas',r:'Cocinero en la hornalla de al lado.',c:'Una sartén con aceite caliente se prende con llamas altas.',k:'Apaga el fuego sin empeorarlo.',
+ ok:['Apagar la fuente de calor','Tapar con la tapa o un paño húmedo escurrido','Dejar la tapa puesta hasta que enfríe','Avisar al responsable de la cocina'],
+ no:[['Echar agua','El agua sobre aceite en llamas produce una explosión de vapor.'],['Mover la sartén al fregadero','Puede derramar fuego y causar quemaduras graves.']]},
+{t:'Derrame de aceite caliente',r:'Encargado de seguridad del turno.',c:'Se derramó aceite caliente en el piso de la cocina y nadie está herido todavía.',k:'Controla el derrame.',
+ ok:['Avisar y alejar a las personas','Cerrar el gas y señalizar la zona','Esperar a que enfríe y cubrir con arena seca','Recoger en recipiente cerrado'],
+ no:[['Secar de inmediato con un trapo','Pisar o secar aceite caliente causa quemaduras y caídas.'],['Lavar hacia el desagüe','Obstruye las cañerías y contamina el agua.']]},
+{t:'Golpe de calor',r:'Compañero de cocina al mediodía beniano.',c:'Un cocinero tiene la piel caliente, está confuso y casi se desmaya junto a las hornallas.',k:'Atiende el golpe de calor.',
+ ok:['Llevarlo a la sombra','Pedir ayuda médica','Enfriar cuello, axilas e ingle','Dar agua en sorbos si está consciente'],
+ no:[['Abrigarlo con una manta','Retiene el calor y empeora el cuadro.'],['Pedirle que siga trabajando','Puede ser una emergencia vital que necesita atención.']]}
+];
+var cur=null,tm=null;
+function menu(){var g=$('mgrid');g.textContent='';M.forEach(function(m,k){var b=el('button',(done[k]?'✓ ':'')+m.t+(done[k]?' · '+'★'.repeat(done[k]):''),'opt'+(done[k]?' done':''));b.onclick=function(){start(k)};g.appendChild(b)});$('menu').classList.remove('hid');$('play').classList.add('hid')}
+function start(k){var m=M[k];cur={k:k,m:m,step:0,lives:3,left:60,over:false};
+ $('menu').classList.add('hid');$('play').classList.remove('hid');$('end').classList.add('hid');$('fb').classList.add('hid');
+ var R=$('rctf');R.textContent='';[['Rol',m.r],['Contexto',m.c],['Tarea',m.k],['Formato','Toca las 4 acciones correctas en el orden del protocolo. Hay 2 trampas.']].forEach(function(p){var d=el('div');d.appendChild(el('span',p[0]));d.appendChild(document.createTextNode(p[1]));R.appendChild(d)});
+ var S=$('slots');S.textContent='';for(var i=0;i<4;i++)S.appendChild(el('div','Paso '+(i+1),'slot'));
+ var items=m.ok.map(function(a,i){return{a:a,i:i}}).concat(m.no.map(function(n){return{a:n[0],i:-1,w:n[1]}}));
+ var A=$('acts');A.textContent='';sh(items).forEach(function(it){var b=el('button',it.a,'opt');b.onclick=function(){tap(it,b)};A.appendChild(b)});
+ $('tb').style.transition='none';$('tb').style.width='100%';
+ clearInterval(tm);hudp();tm=setInterval(tick,1000)}
+function hudp(){$('lives').textContent='♥'.repeat(cur.lives)+'♡'.repeat(3-cur.lives);$('tl').textContent=cur.left+' s';$('tb').style.transition='width 1s linear';$('tb').style.width=(cur.left/60*100)+'%'}
+function fb(t,ok){var f=$('fb');f.textContent=t;f.className='fb'+(ok?' ok':'')}
+function tick(){if(cur.over)return;cur.left--;hudp();if(cur.left<=0)finish(false,'Se acabó el tiempo.')}
+function tap(it,b){if(cur.over)return;
+ if(it.i===cur.step){b.disabled=true;b.classList.add('done');var s=$('slots').children[cur.step];s.textContent=(cur.step+1)+'. '+it.a;s.className='slot f';streak++;score+=100+streak*10;cur.step++;fb('Correcto.',true);hud();if(cur.step===4)finish(true)}
+ else{cur.lives--;streak=0;hud();if(it.i>-1)fb('Buena acción, pero todavía no: revisa el orden del protocolo (Proteger, Avisar, Socorrer).');else{fb(it.w);b.disabled=true}
+  hudp();if(cur.lives<=0)finish(false,'Te quedaste sin vidas.')}}
+function finish(win,msg){cur.over=true;clearInterval(tm);var e=$('end');e.textContent='';e.classList.remove('hid');
+ if(win){var bonus=cur.left*2;score+=bonus;hud();done[cur.k]=Math.max(done[cur.k]||0,cur.lives);e.appendChild(el('h2','Misión cumplida · '+'★'.repeat(cur.lives)));e.appendChild(el('p','Bonus de tiempo: +'+bonus+' puntos.'));badge('Primer respondiente');if(cur.lives===3)badge('Cero errores');if(streak>=5)badge('Racha 5')}
+ else{e.appendChild(el('h2','Misión fallida'));e.appendChild(el('p',msg));var o=el('p','Orden correcto: '+cur.m.ok.map(function(a,i){return(i+1)+'. '+a}).join(' · '));e.appendChild(o)}
+ var r=el('button','Reintentar misión','s');r.onclick=function(){start(cur.k)};e.appendChild(r)}
+$('back').onclick=function(){if(cur){cur.over=true}clearInterval(tm);menu()};
+
+/* Mitos */
+var MY=[['El hielo es lo mejor para una quemadura.',0,'Se enfría con agua corriente 15 minutos; el hielo daña el tejido.'],['Si el aceite se prende, hay que echarle agua.',0,'El agua provoca una explosión de vapor. Se tapa la sartén.'],['La tos fuerte indica que el aire todavía pasa.',1,'Se deja toser y se vigila; se interviene si la tos se debilita.'],['Hay que reventar las ampollas para que drenen.',0,'Las ampollas protegen de la infección.'],['El torniquete es la primera opción ante un corte.',0,'Primero presión directa; el torniquete es el último recurso.'],['Las compresiones de RCP van a 100-120 por minuto.',1,'Ese ritmo mantiene el flujo de sangre sin agotar al rescatista.'],['El aceite usado de cocina puede ir al desagüe.',0,'Obstruye cañerías y contamina el agua. Va en recipiente cerrado.'],['En un golpe de calor hay que enfriar a la persona.',1,'Sombra y enfriamiento de cuello, axilas e ingle mientras llega ayuda.']];
+var q=[],qi=0,qs=0;
+function mito(){var p=$('pv');p.textContent='';if(qi>=q.length){p.appendChild(el('h2','Resultado: '+qs+' / '+q.length));if(qs===q.length)badge('Mito roto');var b=el('button','Jugar de nuevo');b.onclick=function(){q=sh(MY);qi=0;qs=0;mito()};p.appendChild(b);return}
+ var it=q[qi],bx=el('div',null,'box');bx.appendChild(el('p','Afirmación '+(qi+1)+' de '+q.length));bx.appendChild(el('h2',it[0]));var row=el('div',null,'grid');
+ [['Verdadero',1],['Falso',0]].forEach(function(o){var b=el('button',o[0],'opt');b.onclick=function(){var ok=o[1]===it[1];if(ok){qs++;score+=50;streak++}else streak=0;hud();[].forEach.call(row.children,function(x){x.disabled=true});var f=el('div',(ok?'Correcto. ':'Incorrecto. ')+it[2],'fb'+(ok?' ok':''));var n=el('button','Siguiente');n.onclick=function(){qi++;mito()};bx.appendChild(f);bx.appendChild(n)};row.appendChild(b)});
+ bx.appendChild(row);p.appendChild(bx)}
+q=sh(MY);
+
+/* Detective */
+var DT=[['🛢️ Aceite derramado en el piso',1],['🧽 Piso seco y señalizado',0],['🧣 Paño colgado junto a la llama',1],['🍳 Sartén con su tapa al lado',0],['🔪 Cuchillo al borde de la mesa',1],['🧯 Extintor vigente y visible',0],['🔥 Manguera de gas agrietada',1],['🗄️ Cuchillos guardados en su soporte',0],['🩹 Botiquín con gasas vencidas',1],['💧 Pausa con agua a la sombra',0]];
+var sel={},checked=false;
+function det(){var p=$('pd');p.textContent='';p.appendChild(el('p','Toca los elementos que son un riesgo en esta cocina y luego revisa.','mu'));var g=el('div',null,'grid');
+ DT.forEach(function(d,k){var b=el('button',d[0],'opt'+(sel[k]?' sel':''));b.onclick=function(){if(checked)return;sel[k]=!sel[k];b.classList.toggle('sel')};g.appendChild(b);if(checked){if(d[1])b.classList.add('good');}});
+ p.appendChild(g);var r=el('button',checked?'Jugar de nuevo':'Revisar');r.style.marginTop='12px';r.onclick=function(){if(checked){sel={};checked=false;det();return}
+  var ok=0,bad=0;DT.forEach(function(d,k){if(sel[k]&&d[1])ok++;else if(sel[k]&&!d[1])bad++});var miss=5-ok;score+=Math.max(0,ok*100-bad*50);hud();checked=true;det();var f=el('div','Riesgos detectados: '+ok+' de 5. Falsas alarmas: '+bad+'. Los elementos con borde verde son los riesgos reales.','fb'+(ok===5&&bad===0?' ok':''));$('pd').appendChild(f);if(ok===5&&bad===0)badge('Detective')};
+ p.appendChild(r)}
+
+/* Pestañas */
+var tabs=[].slice.call(document.querySelectorAll('.tabs button')),pn={m:$('pm'),v:$('pv'),d:$('pd')};
+tabs.forEach(function(t){t.onclick=function(){tabs.forEach(function(o){o.setAttribute('aria-selected',String(o===t))});for(var k in pn)pn[k].classList.toggle('hid',k!==t.dataset.t);if(t.dataset.t==='v'&&!$('pv').firstChild)mito();if(t.dataset.t==='d')det();if(t.dataset.t!=='m'&&cur){cur.over=true;clearInterval(tm)}}});
+menu();hud();
+})();
+</script>
+</body>
+</html>
